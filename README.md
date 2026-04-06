@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Email Classifier RL Environment
 
 An OpenEnv-compatible reinforcement learning environment where an AI agent learns to classify emails into `spam`, `important`, or `promotion`.
@@ -46,3 +47,4 @@ Email overload is a real-world problem. This environment trains agents to triage
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+
