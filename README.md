@@ -62,14 +62,14 @@ score = correct_predictions / total_predictions
 
 ## Baseline Results
 
+
+
 Example output from `python inference.py`:
 
 
-Final Score (easy): 0.20 (20.0% accuracy)
-Final Score (medium): 0.25 (25.0% accuracy)
-Final Score (hard): 0.20 (20.0% accuracy)
+[END] task=easy score=0.8000 accuracy=80.0% total_reward=6.50
+[END] task=medium score=0.2500 accuracy=25.0% total_reward=-2.80
+[END] task=hard score=0.4000 accuracy=40.0% total_reward=1.00
+[END] summary easy=0.8000 medium=0.2500 hard=0.4000
 
-BASELINE SUMMARY
-easy   : 0.20
-medium : 0.25
-hard   : 0.20
+
