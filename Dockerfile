@@ -10,13 +10,3 @@ COPY . .
 EXPOSE 7860
 
 CMD ["uvicorn", "env:app", "--host", "0.0.0.0", "--port", "7860"]
-```
-
----
-
-**3. Update `requirements.txt`** — replace with:
-```
-fastapi
-uvicorn
-pydantic
-openai

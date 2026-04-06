@@ -1,7 +1,7 @@
 name: email-classifier-env
 version: "1.0.0"
 description: "RL environment for classifying emails into spam, important, or promotion"
-author: "your-name"
+author: "gsraastha5-star"
 
 tasks:
   - id: easy
