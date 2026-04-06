@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Email Classifier RL Environment
 
 An OpenEnv-compatible reinforcement learning environment where an AI agent
@@ -74,3 +75,6 @@ email-openenv/
 ├── requirements.txt
 ├── Dockerfile
 └── README.md
+=======
+# email-openenv
+>>>>>>> 18cecb37d5a9c5441bc384153449e1656713fa64
