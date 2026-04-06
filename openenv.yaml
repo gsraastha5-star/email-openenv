@@ -1,0 +1,42 @@
+name: email-classifier-env
+version: "1.0.0"
+description: "RL environment for classifying emails into spam, important, or promotion"
+author: "your-name"
+
+tasks:
+  - id: easy
+    description: "Classify 5 obvious emails"
+    difficulty: easy
+  - id: medium
+    description: "Classify 8 mixed emails"
+    difficulty: medium
+  - id: hard
+    description: "Classify 10 tricky ambiguous emails"
+    difficulty: hard
+
+action_space:
+  type: string
+  values: ["spam", "important", "promotion"]
+
+observation_space:
+  type: object
+  fields:
+    email_text: string
+    sender: string
+    subject: string
+    step: integer
+    total_emails: integer
+    task: string
+
+reward:
+  min: -1.1
+  max: 11.9
+  description: "+2 correct, -1 wrong, -0.1 step penalty, +10 perfect episode bonus"
+
+endpoints:
+  reset: GET /reset
+  step: POST /step
+  state: GET /state
+  tasks: GET /tasks
+  grader: GET /grader
+  baseline: GET /baseline
