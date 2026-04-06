@@ -5,15 +5,39 @@ from openai import OpenAI
 
 from env import EmailEnv
 
-API_BASE_URL = os.environ.get("API_BASE_URL", "https://api.openai.com/v1")
-MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-4o-mini")
-HF_TOKEN = os.environ.get("HF_TOKEN", "")
+API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini")
+HF_TOKEN = os.getenv("HF_TOKEN", "")
+LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME", "")
 
+TASKS = ["easy", "medium", "hard"]
+BENCHMARK = "email-openenv"
 VALID_ACTIONS = ["spam", "important", "promotion"]
 
 SYSTEM_PROMPT = """You are an email classifier.
 Given an email, classify it as exactly one of: spam, important, promotion.
 Reply with only one word: spam, important, or promotion."""
+
+
+def log_start(task: str, env: str, model: str) -> None:
+    print(f"[START] task={task} env={env} model={model}", flush=True)
+
+
+def log_step(step: int, action: str, reward: float, done: bool, error: str | None) -> None:
+    error_value = error if error else "null"
+    done_value = str(done).lower()
+    print(
+        f"[STEP] step={step} action={action} reward={reward:.2f} done={done_value} error={error_value}",
+        flush=True,
+    )
+
+
+def log_end(success: bool, steps: int, score: float, rewards: list[float]) -> None:
+    rewards_str = ",".join(f"{reward:.2f}" for reward in rewards)
+    print(
+        f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}",
+        flush=True,
+    )
 
 
 def get_action(client: OpenAI, obs) -> str:
@@ -31,60 +55,69 @@ Reply with one word only."""
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_msg},
             ],
-            max_tokens=10,
             temperature=0,
+            max_tokens=10,
+            stream=False,
         )
-        content = response.choices[0].message.content or ""
-        label = content.strip().lower()
-        return label if label in VALID_ACTIONS else random.choice(VALID_ACTIONS)
+        content = (response.choices[0].message.content or "").strip().lower()
+        if content in VALID_ACTIONS:
+            return content
     except Exception:
-        return random.choice(VALID_ACTIONS)
+        pass
+
+    return random.choice(VALID_ACTIONS)
 
 
-def run_task(env: EmailEnv, client: OpenAI, task: str) -> float:
-    env.reset(task)
-    done = False
-    step_num = 0
+def run_task(env: EmailEnv, client: OpenAI, task: str) -> None:
+    rewards: list[float] = []
+    steps_taken = 0
+    success = False
+    score = 0.0
 
-    print(f"[START] task={task}")
+    log_start(task=task, env=BENCHMARK, model=MODEL_NAME)
 
-    while not done:
-        step_num += 1
-        obs = env._get_observation()
-        if obs is None:
-            break
+    try:
+        env.reset(task)
+        done = False
 
-        action = get_action(client, obs)
-        result = env.step(action)
-        done = result.done
+        while not done:
+            obs = env._get_observation()
+            if obs is None:
+                break
 
-        reward_value = result.reward.value if result.reward else 0.0
-        reason = result.reward.reason if result.reward else ""
+            action = get_action(client, obs)
+            result = env.step(action)
 
-        print(
-            f"[STEP] task={task} step={step_num} "
-            f"subject={obs.subject!r} sender={obs.sender!r} "
-            f"action={action} reward={reward_value:.2f} done={done} reason={reason!r}"
+            reward = result.reward.value if result.reward else 0.0
+            done = result.done
+            error = None
+
+            steps_taken += 1
+            rewards.append(reward)
+
+            log_step(
+                step=steps_taken,
+                action=action,
+                reward=reward,
+                done=done,
+                error=error,
+            )
+
+        score = env.get_grader_score()
+        success = score > 0.0
+
+    finally:
+        log_end(
+            success=success,
+            steps=steps_taken,
+            score=score,
+            rewards=rewards,
         )
-
-    score = env.get_grader_score()
-    print(
-        f"[END] task={task} score={score:.4f} "
-        f"accuracy={score * 100:.1f}% total_reward={env.total_reward:.2f}"
-    )
-    return score
 
 
 if __name__ == "__main__":
     client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN or "dummy")
 
-    env = EmailEnv()
-    scores = {}
-
-    for task in ["easy", "medium", "hard"]:
-        scores[task] = run_task(env, client, task)
-
-    print(
-        "[END] summary "
-        + " ".join(f"{task}={score:.4f}" for task, score in scores.items())
-    )
+    for task_name in TASKS:
+        env = EmailEnv()
+        run_task(env, client, task_name)
