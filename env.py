@@ -19,6 +19,10 @@ class Action(BaseModel):
     label: str
 
 
+class ResetRequest(BaseModel):
+    task: str = "easy"
+
+
 class Reward(BaseModel):
     value: float
     reason: str
@@ -177,9 +181,34 @@ app.add_middleware(
 env = EmailEnv()
 
 
+@app.get("/")
+def home():
+    return {
+        "message": "Email Classifier RL Environment is running",
+        "endpoints": [
+            "/reset?task=easy",
+            "/step",
+            "/state",
+            "/tasks",
+            "/grader",
+            "/baseline",
+            "/docs",
+        ],
+    }
+
+
 @app.get("/reset")
 def reset(task: str = "easy"):
     try:
+        return env.reset(task)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/reset")
+def reset_post(payload: Optional[ResetRequest] = None):
+    try:
+        task = payload.task if payload else "easy"
         return env.reset(task)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -246,17 +275,3 @@ def baseline():
         }
 
     return {"baseline_scores": results}
-@app.get("/")
-def home():
-    return {
-        "message": "Email Classifier RL Environment is running",
-        "endpoints": [
-            "/reset?task=easy",
-            "/step",
-            "/state",
-            "/tasks",
-            "/grader",
-            "/baseline",
-            "/docs",
-        ],
-    }
