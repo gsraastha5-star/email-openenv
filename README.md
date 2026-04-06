@@ -54,7 +54,7 @@ Email overload is a real-world problem. This environment trains agents to triage
 
 ## Setup
 
-```bash
+bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
