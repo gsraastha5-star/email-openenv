@@ -14,9 +14,20 @@ TASKS = ["easy", "medium", "hard"]
 BENCHMARK = "email-openenv"
 VALID_ACTIONS = ["spam", "important", "promotion"]
 
-SYSTEM_PROMPT = """You are an email classifier.
-Given an email, classify it as exactly one of: spam, important, promotion.
-Reply with only one word: spam, important, or promotion."""
+SYSTEM_PROMPT = """You are an expert email triage assistant.
+
+Your job is to classify each email into exactly one of these labels:
+- spam: scams, phishing, fraudulent requests, suspicious messages, malicious or deceptive outreach
+- important: work-related, urgent, operational, business-critical, transactional, or genuinely useful emails
+- promotion: marketing, discounts, sales, shopping offers, growth campaigns, newsletters, and non-essential commercial content
+
+Guidelines:
+- Be very careful with phishing, credential verification requests, suspicious links, fake urgency, and spoofed domains. These are usually spam.
+- Emails about meetings, invoices, contracts, client feedback, deadlines, shipments, payroll, or team coordination are often important.
+- Offers, discounts, flash sales, free trials, and browsing-based recommendations are usually promotion.
+- Reply with exactly one word only: spam, important, or promotion.
+Do not explain your answer.
+"""
 
 
 def log_start(task: str, env: str, model: str) -> None:
@@ -40,13 +51,27 @@ def log_end(success: bool, steps: int, score: float, rewards: list[float]) -> No
     )
 
 
-def get_action(client: OpenAI, obs) -> str:
-    user_msg = f"""Subject: {obs.subject}
-From: {obs.sender}
-Email: {obs.email_text}
+def build_user_message(obs) -> str:
+    return f"""Classify this email.
 
-Classify this email as exactly one of: spam, important, promotion.
-Reply with one word only."""
+Task context: {obs.task_description}
+Subject: {obs.subject}
+Sender: {obs.sender}
+Sender domain: {obs.sender_domain}
+Contains links: {obs.contains_links}
+Contains urgency words: {obs.contains_urgency_words}
+External sender: {obs.is_external_sender}
+Body: {obs.email_text}
+
+Return exactly one label:
+spam
+important
+promotion
+"""
+
+
+def get_action(client: OpenAI, obs) -> str:
+    user_msg = build_user_message(obs)
 
     try:
         response = client.chat.completions.create(
@@ -65,6 +90,16 @@ Reply with one word only."""
     except Exception:
         pass
 
+    # deterministic fallback for reproducibility
+    text_blob = f"{obs.subject} {obs.sender} {obs.email_text}".lower()
+
+    if any(word in text_blob for word in ["verify", "suspension", "refund", "won", "free iphone", "compromised", "click here", "credential", "phishing"]):
+        return "spam"
+    if any(word in text_blob for word in ["sale", "discount", "offer", "trial", "membership", "browse", "arrivals", "flash sale"]):
+        return "promotion"
+    if any(word in text_blob for word in ["meeting", "invoice", "deadline", "contract", "client", "team", "shipment", "board", "payroll", "standup"]):
+        return "important"
+
     return random.choice(VALID_ACTIONS)
 
 
@@ -77,7 +112,7 @@ def run_task(env: EmailEnv, client: OpenAI, task: str) -> None:
     log_start(task=task, env=BENCHMARK, model=MODEL_NAME)
 
     try:
-        env.reset(task)
+        env.reset(task, seed=42)
         done = False
 
         while not done:
@@ -104,7 +139,7 @@ def run_task(env: EmailEnv, client: OpenAI, task: str) -> None:
             )
 
         score = env.get_grader_score()
-        success = score > 0.0
+        success = score >= 0.3
 
     finally:
         log_end(

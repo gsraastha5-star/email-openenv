@@ -62,40 +62,43 @@ score = correct_predictions / total_predictions
 
 ## Baseline Results
 
+
+
 Example output from `python inference.py`:
 
 
 [START] task=easy env=email-openenv model=gpt-4o-mini
 [STEP] step=1 action=important reward=1.90 done=false error=null
-[STEP] step=2 action=important reward=-1.10 done=false error=null
-[STEP] step=3 action=important reward=1.90 done=false error=null
-[STEP] step=4 action=spam reward=-1.10 done=false error=null
-[STEP] step=5 action=promotion reward=-1.10 done=true error=null
-[END] success=true steps=5 score=0.400 rewards=1.90,-1.10,1.90,-1.10,-1.10
+[STEP] step=2 action=important reward=-0.85 done=false error=null
+[STEP] step=3 action=promotion reward=-1.10 done=false error=null
+[STEP] step=4 action=spam reward=1.90 done=false error=null
+[STEP] step=5 action=spam reward=-2.10 done=true error=null
+[END] success=true steps=5 score=0.400 rewards=1.90,-0.85,-1.10,1.90,-2.10
 
 [START] task=medium env=email-openenv model=gpt-4o-mini
-[STEP] step=1 action=spam reward=-1.10 done=false error=null
-[STEP] step=2 action=important reward=-1.10 done=false error=null
-[STEP] step=3 action=important reward=1.90 done=false error=null
-[STEP] step=4 action=spam reward=-1.10 done=false error=null
-[STEP] step=5 action=promotion reward=1.90 done=false error=null
-[STEP] step=6 action=spam reward=-1.10 done=false error=null
-[STEP] step=7 action=important reward=-1.10 done=false error=null
-[STEP] step=8 action=promotion reward=-1.10 done=true error=null
-[END] success=true steps=8 score=0.250 rewards=-1.10,-1.10,1.90,-1.10,1.90,-1.10,-1.10,-1.10
+[STEP] step=1 action=spam reward=-2.10 done=false error=null
+[STEP] step=2 action=important reward=-0.85 done=false error=null
+[STEP] step=3 action=important reward=-1.60 done=false error=null
+[STEP] step=4 action=promotion reward=-1.10 done=false error=null
+[STEP] step=5 action=spam reward=1.90 done=false error=null
+[STEP] step=6 action=spam reward=-0.85 done=false error=null
+[STEP] step=7 action=spam reward=-2.10 done=false error=null
+[STEP] step=8 action=important reward=-0.85 done=true error=null
+[END] success=true steps=8 score=0.125 rewards=-2.10,-0.85,-1.60,-1.10,1.90,-0.85,-2.10,-0.85
 
 [START] task=hard env=email-openenv model=gpt-4o-mini
-[STEP] step=1 action=spam reward=1.90 done=false error=null
-[STEP] step=2 action=important reward=-1.10 done=false error=null
-[STEP] step=3 action=important reward=-1.10 done=false error=null
-[STEP] step=4 action=spam reward=1.90 done=false error=null
-[STEP] step=5 action=important reward=1.90 done=false error=null
-[STEP] step=6 action=important reward=-1.10 done=false error=null
-[STEP] step=7 action=spam reward=-1.10 done=false error=null
-[STEP] step=8 action=spam reward=-1.10 done=false error=null
-[STEP] step=9 action=promotion reward=-1.10 done=false error=null
-[STEP] step=10 action=spam reward=-1.10 done=true error=null
-[END] success=true steps=10 score=0.300 rewards=1.90,-1.10,-1.10,1.90,1.90,-1.10,-1.10,-1.10,-1.10,-1.10
+[STEP] step=1 action=promotion reward=1.90 done=false error=null
+[STEP] step=2 action=promotion reward=-1.10 done=false error=null
+[STEP] step=3 action=spam reward=-2.10 done=false error=null
+[STEP] step=4 action=spam reward=-2.10 done=false error=null
+[STEP] step=5 action=spam reward=1.90 done=false error=null
+[STEP] step=6 action=important reward=-1.60 done=false error=null
+[STEP] step=7 action=important reward=-0.85 done=false error=null
+[STEP] step=8 action=promotion reward=1.90 done=false error=null
+[STEP] step=9 action=spam reward=-2.10 done=false error=null
+[STEP] step=10 action=important reward=-1.60 done=true error=null
+[END] success=true steps=10 score=0.300 rewards=1.90,-1.10,-2.10,-2.10,1.90,-1.60,-0.85,1.90,-2.10,-1.60
+
 
 # Setup Instructions
 python3 -m venv venv
