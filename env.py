@@ -9,10 +9,15 @@ from pydantic import BaseModel
 class Observation(BaseModel):
     email_text: str
     sender: str
+    sender_domain: str
     subject: str
+    contains_links: bool
+    contains_urgency_words: bool
+    is_external_sender: bool
     step: int
     total_emails: int
     task: str
+    task_description: str
 
 
 class Action(BaseModel):
@@ -21,6 +26,7 @@ class Action(BaseModel):
 
 class ResetRequest(BaseModel):
     task: str = "easy"
+    seed: Optional[int] = None
 
 
 class Reward(BaseModel):
@@ -35,39 +41,168 @@ class StepResult(BaseModel):
     info: dict
 
 
+TASK_METADATA = {
+    "easy": {
+        "description": "Personal inbox triage with obvious spam, promotions, and important messages.",
+    },
+    "medium": {
+        "description": "Workplace inbox triage with invoices, deadlines, renewals, and mixed-intent emails.",
+    },
+    "hard": {
+        "description": "Security-sensitive inbox triage with phishing-like, ambiguous, and high-stakes business emails.",
+    },
+}
+
+
 DATASETS = {
     "easy": [
-        {"text": "Win a free iPhone now! Click here!", "sender": "promo@scam.com", "subject": "You won!!", "label": "spam"},
-        {"text": "Team meeting at 5 PM today.", "sender": "boss@company.com", "subject": "Meeting reminder", "label": "important"},
-        {"text": "50% off on all shoes this weekend.", "sender": "shop@store.com", "subject": "Weekend Sale", "label": "promotion"},
-        {"text": "Your account has been compromised.", "sender": "hack@fake.com", "subject": "Urgent security alert", "label": "spam"},
-        {"text": "Lunch with the team at 1 PM.", "sender": "hr@company.com", "subject": "Team lunch", "label": "important"},
+        {
+            "text": "Win a free iPhone now! Click here!",
+            "sender": "promo@scam.com",
+            "subject": "You won!!",
+            "label": "mark_spam",
+        },
+        {
+            "text": "Team meeting at 5 PM today.",
+            "sender": "boss@company.com",
+            "subject": "Meeting reminder",
+            "label": "escalate",
+        },
+        {
+            "text": "50% off on all shoes this weekend. Shop now.",
+            "sender": "shop@store.com",
+            "subject": "Weekend Sale",
+            "label": "promotions_tab",
+        },
+        {
+            "text": "Your account has been compromised. Verify immediately here.",
+            "sender": "hack@fake.com",
+            "subject": "Urgent security alert",
+            "label": "mark_spam",
+        },
+        {
+            "text": "Lunch with the team at 1 PM.",
+            "sender": "hr@company.com",
+            "subject": "Team lunch",
+            "label": "escalate",
+        },
     ],
     "medium": [
-        {"text": "Claim your exclusive reward now.", "sender": "offers@deals.net", "subject": "Special offer for you", "label": "spam"},
-        {"text": "Project deadline moved to Friday.", "sender": "pm@company.com", "subject": "Deadline update", "label": "important"},
-        {"text": "New arrivals in electronics this week.", "sender": "news@electronics.com", "subject": "This week's picks", "label": "promotion"},
-        {"text": "Verify your bank details immediately.", "sender": "support@bankfake.com", "subject": "Urgent: verify now", "label": "spam"},
-        {"text": "Your invoice #4521 is attached.", "sender": "billing@vendor.com", "subject": "Invoice #4521", "label": "important"},
-        {"text": "Members-only discount inside.", "sender": "vip@fashion.com", "subject": "VIP access unlocked", "label": "promotion"},
-        {"text": "Action required: contract renewal.", "sender": "legal@company.com", "subject": "Contract renewal", "label": "important"},
-        {"text": "You've been selected for a free trial.", "sender": "trial@software.io", "subject": "Start your free trial", "label": "promotion"},
+        {
+            "text": "Claim your exclusive reward now using the link below.",
+            "sender": "offers@deals.net",
+            "subject": "Special offer for you",
+            "label": "mark_spam",
+        },
+        {
+            "text": "Project deadline moved to Friday. Please update your deliverables.",
+            "sender": "pm@company.com",
+            "subject": "Deadline update",
+            "label": "escalate",
+        },
+        {
+            "text": "New arrivals in electronics this week. Browse our latest picks.",
+            "sender": "news@electronics.com",
+            "subject": "This week's picks",
+            "label": "promotions_tab",
+        },
+        {
+            "text": "Verify your bank details immediately to avoid account suspension.",
+            "sender": "support@bankfake.com",
+            "subject": "Urgent: verify now",
+            "label": "mark_spam",
+        },
+        {
+            "text": "Your invoice #4521 is attached for review.",
+            "sender": "billing@vendor.com",
+            "subject": "Invoice #4521",
+            "label": "escalate",
+        },
+        {
+            "text": "Members-only discount inside. Limited-time fashion offer.",
+            "sender": "vip@fashion.com",
+            "subject": "VIP access unlocked",
+            "label": "promotions_tab",
+        },
+        {
+            "text": "Action required: contract renewal before month end.",
+            "sender": "legal@company.com",
+            "subject": "Contract renewal",
+            "label": "escalate",
+        },
+        {
+            "text": "You've been selected for a free trial. Start today.",
+            "sender": "trial@software.io",
+            "subject": "Start your free trial",
+            "label": "promotions_tab",
+        },
     ],
     "hard": [
-        {"text": "Important update regarding your account security.", "sender": "security@bankreal.com", "subject": "Account security", "label": "important"},
-        {"text": "Last chance to grab our limited offer.", "sender": "deals@trusted.com", "subject": "Limited time offer", "label": "promotion"},
-        {"text": "Please review the attached client feedback.", "sender": "client@bigcorp.com", "subject": "Client feedback", "label": "important"},
-        {"text": "Verify your details to avoid suspension.", "sender": "noreply@paypa1.com", "subject": "Account suspension", "label": "spam"},
-        {"text": "New discounts on items you viewed.", "sender": "recs@amazon-like.com", "subject": "Based on your browsing", "label": "promotion"},
-        {"text": "Urgent: your shipment is delayed.", "sender": "shipping@dhl.com", "subject": "Shipment update", "label": "important"},
-        {"text": "You qualify for a government refund.", "sender": "refund@gov-support.net", "subject": "Tax refund available", "label": "spam"},
-        {"text": "Team standup notes from today.", "sender": "scrum@company.com", "subject": "Standup 2025-04-03", "label": "important"},
-        {"text": "Flash sale: 70% off for next 2 hours.", "sender": "flash@shopnow.com", "subject": "Flash Sale", "label": "promotion"},
-        {"text": "Congratulations, you won our survey prize.", "sender": "prize@survey-win.com", "subject": "Survey winner", "label": "spam"},
+        {
+            "text": "Please confirm your payroll credentials immediately to prevent delayed salary processing.",
+            "sender": "security@company-payroll.co",
+            "subject": "Urgent payroll verification",
+            "label": "mark_spam",
+        },
+        {
+            "text": "Re: Board meeting moved to 6 PM. Updated agenda attached.",
+            "sender": "ceo-office@company.com",
+            "subject": "Board meeting update",
+            "label": "escalate",
+        },
+        {
+            "text": "Your shipment is delayed due to customs review. Track package here.",
+            "sender": "shipping@dhl.com",
+            "subject": "Shipment update",
+            "label": "escalate",
+        },
+        {
+            "text": "Flash sale: 70% off for the next 2 hours only. Buy now.",
+            "sender": "flash@shopnow.com",
+            "subject": "Flash Sale",
+            "label": "promotions_tab",
+        },
+        {
+            "text": "Verify your account details to avoid service suspension.",
+            "sender": "noreply@paypa1.com",
+            "subject": "Account suspension",
+            "label": "mark_spam",
+        },
+        {
+            "text": "Please review the attached client feedback before today's call.",
+            "sender": "client@bigcorp.com",
+            "subject": "Client feedback",
+            "label": "escalate",
+        },
+        {
+            "text": "Tax refund available. Submit your banking details to claim today.",
+            "sender": "refund@gov-support.net",
+            "subject": "Tax refund available",
+            "label": "mark_spam",
+        },
+        {
+            "text": "New discounts on items you viewed this week. Limited offer inside.",
+            "sender": "recs@amazon-like.com",
+            "subject": "Based on your browsing",
+            "label": "promotions_tab",
+        },
+        {
+            "text": "Team standup notes from today. Action items included below.",
+            "sender": "scrum@company.com",
+            "subject": "Standup notes",
+            "label": "escalate",
+        },
+        {
+            "text": "Last chance to grab our premium membership at 60% off.",
+            "sender": "deals@trusted.com",
+            "subject": "Limited time offer",
+            "label": "promotions_tab",
+        },
     ],
 }
 
-VALID_ACTIONS = ["spam", "important", "promotion"]
+VALID_ACTIONS = ["mark_spam", "escalate", "promotions_tab"]
+INTERNAL_DOMAINS = {"company.com", "bigcorp.com", "dhl.com", "vendor.com"}
 
 
 class EmailEnv:
@@ -78,19 +213,38 @@ class EmailEnv:
         self.total_reward = 0.0
         self.predictions = []
         self.true_labels = []
+        self.seed = None
+        self.rng = random.Random()
 
-    def reset(self, task: str = "easy") -> Observation:
+    def reset(self, task: str = "easy", seed: Optional[int] = None) -> Observation:
         if task not in DATASETS:
             raise ValueError(f"Invalid task '{task}'. Choose from: {', '.join(DATASETS.keys())}")
 
         self.current_task = task
+        self.seed = seed
+        self.rng = random.Random(seed)
         self.emails = DATASETS[task].copy()
-        random.shuffle(self.emails)
+        self.rng.shuffle(self.emails)
         self.current_index = 0
         self.total_reward = 0.0
         self.predictions = []
         self.true_labels = []
         return self._get_observation()
+
+    def _penalty_for_misclassification(self, predicted: str, correct: str) -> tuple[float, str]:
+        if correct == "escalate" and predicted == "mark_spam":
+            return -2.5, "Critical miss: important email incorrectly sent to spam"
+        if correct == "mark_spam" and predicted == "escalate":
+            return -2.0, "Risky action: suspicious email incorrectly escalated"
+        if correct == "escalate" and predicted == "promotions_tab":
+            return -1.25, "Important email downgraded to low priority"
+        if correct == "promotions_tab" and predicted == "mark_spam":
+            return -0.75, "Promotion treated too aggressively as spam"
+        if correct == "promotions_tab" and predicted == "escalate":
+            return -0.5, "Promotion unnecessarily escalated"
+        if correct == "mark_spam" and predicted == "promotions_tab":
+            return -1.25, "Suspicious email softened into promotions tab"
+        return -1.0, f"Wrong action. Chose '{predicted}', correct was '{correct}'"
 
     def step(self, action: str) -> StepResult:
         if action not in VALID_ACTIONS:
@@ -109,10 +263,9 @@ class EmailEnv:
 
         if action == correct:
             reward_value = 2.0
-            reason = f"Correct! '{action}' matched '{correct}'"
+            reason = f"Correct triage action: '{action}'"
         else:
-            reward_value = -1.0
-            reason = f"Wrong. Chose '{action}', correct was '{correct}'"
+            reward_value, reason = self._penalty_for_misclassification(action, correct)
 
         reward_value -= 0.1
 
@@ -137,16 +290,19 @@ class EmailEnv:
             info={
                 "total_reward": round(self.total_reward, 2),
                 "progress": f"{self.current_index}/{len(self.emails)}",
+                "seed": self.seed,
             },
         )
 
     def state(self) -> dict:
         return {
             "task": self.current_task,
+            "task_description": TASK_METADATA[self.current_task]["description"],
             "step": self.current_index,
             "total_emails": len(self.emails),
             "total_reward": round(self.total_reward, 2),
             "done": self.current_index >= len(self.emails),
+            "seed": self.seed,
         }
 
     def get_grader_score(self) -> float:
@@ -158,18 +314,31 @@ class EmailEnv:
     def _get_observation(self) -> Optional[Observation]:
         if self.current_index >= len(self.emails):
             return None
+
         email = self.emails[self.current_index]
+        sender_domain = email["sender"].split("@")[-1].lower()
+        text_blob = f"{email['subject']} {email['text']}".lower()
+        urgency_words = ["urgent", "immediately", "today", "action required", "verify", "suspension", "deadline"]
+        contains_links = any(word in email["text"].lower() for word in ["click", "link", "http", "verify here", "track package"])
+        contains_urgency_words = any(word in text_blob for word in urgency_words)
+        is_external_sender = sender_domain not in INTERNAL_DOMAINS
+
         return Observation(
             email_text=email["text"],
             sender=email["sender"],
+            sender_domain=sender_domain,
             subject=email["subject"],
+            contains_links=contains_links,
+            contains_urgency_words=contains_urgency_words,
+            is_external_sender=is_external_sender,
             step=self.current_index + 1,
             total_emails=len(self.emails),
             task=self.current_task,
+            task_description=TASK_METADATA[self.current_task]["description"],
         )
 
 
-app = FastAPI(title="Email Classifier RL Environment")
+app = FastAPI(title="Inbox Triage Action Environment")
 
 app.add_middleware(
     CORSMiddleware,
@@ -184,7 +353,7 @@ env = EmailEnv()
 @app.get("/")
 def home():
     return {
-        "message": "Email Classifier RL Environment is running",
+        "message": "Inbox Triage Action Environment is running",
         "endpoints": [
             "/reset?task=easy",
             "/step",
@@ -198,9 +367,9 @@ def home():
 
 
 @app.get("/reset")
-def reset(task: str = "easy"):
+def reset(task: str = "easy", seed: Optional[int] = None):
     try:
-        return env.reset(task)
+        return env.reset(task, seed=seed)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -209,7 +378,8 @@ def reset(task: str = "easy"):
 def reset_post(payload: Optional[ResetRequest] = None):
     try:
         task = payload.task if payload else "easy"
-        return env.reset(task)
+        seed = payload.seed if payload else None
+        return env.reset(task, seed=seed)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -231,15 +401,15 @@ def state():
 def tasks():
     return {
         "tasks": [
-            {"id": "easy", "description": "5 obvious emails", "difficulty": "easy"},
-            {"id": "medium", "description": "8 mixed emails", "difficulty": "medium"},
-            {"id": "hard", "description": "10 tricky/ambiguous emails", "difficulty": "hard"},
+            {"id": "easy", "description": TASK_METADATA["easy"]["description"], "difficulty": "easy"},
+            {"id": "medium", "description": TASK_METADATA["medium"]["description"], "difficulty": "medium"},
+            {"id": "hard", "description": TASK_METADATA["hard"]["description"], "difficulty": "hard"},
         ],
         "action_schema": {
             "label": {
                 "type": "string",
                 "values": VALID_ACTIONS,
-                "description": "Classify the email as spam, important, or promotion",
+                "description": "Choose the inbox triage action: mark_spam, escalate, or promotions_tab",
             }
         },
     }
@@ -248,8 +418,13 @@ def tasks():
 @app.get("/grader")
 def grader():
     score = env.get_grader_score()
+    correct = sum(p == t for p, t in zip(env.predictions, env.true_labels))
+    total = len(env.true_labels)
+
     return {
         "score": score,
+        "correct_predictions": correct,
+        "total_predictions": total,
         "predictions": env.predictions,
         "true_labels": env.true_labels,
         "accuracy": f"{score * 100:.1f}%",
@@ -261,11 +436,11 @@ def baseline():
     results = {}
     for task in DATASETS:
         temp_env = EmailEnv()
-        temp_env.reset(task)
+        temp_env.reset(task, seed=42)
         done = False
 
         while not done:
-            action = random.choice(VALID_ACTIONS)
+            action = temp_env.rng.choice(VALID_ACTIONS)
             result = temp_env.step(action)
             done = result.done
 

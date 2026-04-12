@@ -12,21 +12,24 @@ LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME", "")
 
 TASKS = ["easy", "medium", "hard"]
 BENCHMARK = "email-openenv"
-VALID_ACTIONS = ["spam", "important", "promotion"]
+VALID_ACTIONS = ["mark_spam", "escalate", "promotions_tab"]
 
-SYSTEM_PROMPT = """You are an expert email triage assistant.
+SYSTEM_PROMPT = """You are an expert inbox triage assistant.
 
-Your job is to classify each email into exactly one of these labels:
-- spam: scams, phishing, fraudulent requests, suspicious messages, malicious or deceptive outreach
-- important: work-related, urgent, operational, business-critical, transactional, or genuinely useful emails
-- promotion: marketing, discounts, sales, shopping offers, growth campaigns, newsletters, and non-essential commercial content
+You must choose exactly one action for each email:
+- mark_spam: scams, phishing, fraudulent requests, malicious or suspicious email
+- escalate: important, urgent, operational, business-critical, reply-worthy, or genuinely useful email
+- promotions_tab: marketing, discounts, sales, shopping offers, newsletters, and non-essential commercial content
 
 Guidelines:
-- Be very careful with phishing, credential verification requests, suspicious links, fake urgency, and spoofed domains. These are usually spam.
-- Emails about meetings, invoices, contracts, client feedback, deadlines, shipments, payroll, or team coordination are often important.
-- Offers, discounts, flash sales, free trials, and browsing-based recommendations are usually promotion.
-- Reply with exactly one word only: spam, important, or promotion.
-Do not explain your answer.
+- Be very careful with phishing, spoofed domains, fake urgency, credential checks, and suspicious verification requests. These usually require mark_spam.
+- Meetings, invoices, deadlines, contracts, client updates, shipment updates, payroll, and team coordination often require escalate.
+- Discounts, offers, flash sales, product promotions, and free trials usually belong in promotions_tab.
+
+Reply with exactly one action:
+mark_spam
+escalate
+promotions_tab
 """
 
 
@@ -52,7 +55,7 @@ def log_end(success: bool, steps: int, score: float, rewards: list[float]) -> No
 
 
 def build_user_message(obs) -> str:
-    return f"""Classify this email.
+    return f"""Choose the best inbox triage action for this email.
 
 Task context: {obs.task_description}
 Subject: {obs.subject}
@@ -63,10 +66,10 @@ Contains urgency words: {obs.contains_urgency_words}
 External sender: {obs.is_external_sender}
 Body: {obs.email_text}
 
-Return exactly one label:
-spam
-important
-promotion
+Return exactly one action:
+mark_spam
+escalate
+promotions_tab
 """
 
 
@@ -90,15 +93,14 @@ def get_action(client: OpenAI, obs) -> str:
     except Exception:
         pass
 
-    # deterministic fallback for reproducibility
     text_blob = f"{obs.subject} {obs.sender} {obs.email_text}".lower()
 
-    if any(word in text_blob for word in ["verify", "suspension", "refund", "won", "free iphone", "compromised", "click here", "credential", "phishing"]):
-        return "spam"
+    if any(word in text_blob for word in ["verify", "suspension", "refund", "won", "free iphone", "compromised", "click here", "credential", "payroll verification"]):
+        return "mark_spam"
     if any(word in text_blob for word in ["sale", "discount", "offer", "trial", "membership", "browse", "arrivals", "flash sale"]):
-        return "promotion"
+        return "promotions_tab"
     if any(word in text_blob for word in ["meeting", "invoice", "deadline", "contract", "client", "team", "shipment", "board", "payroll", "standup"]):
-        return "important"
+        return "escalate"
 
     return random.choice(VALID_ACTIONS)
 

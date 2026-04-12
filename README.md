@@ -15,15 +15,17 @@ An OpenEnv-compatible reinforcement learning environment where an AI agent learn
 
 ## Motivation
 
-Email overload is a real-world problem. This environment simulates email triage, a task that people actually perform in workplaces and personal inboxes every day. It helps evaluate whether an AI agent can prioritize useful messages, ignore spam, and recognize promotional content across different difficulty levels.
+Email overload is a real-world problem in both personal and workplace inboxes. This environment simulates a more realistic inbox assistant workflow: instead of only classifying messages, the agent must decide what operational action should be taken on each email, such as escalating important messages, routing promotions away from the main inbox, or marking suspicious emails as spam.
+
 
 ## Action Space
 
 | Action | Description |
 |---|---|
-| `spam` | Unsolicited, suspicious, or malicious email |
-| `important` | Work-related, urgent, or useful email |
-| `promotion` | Marketing, discount, or shopping-related email |
+| `mark_spam` | Route suspicious, scam, phishing, or malicious emails to spam |
+| `escalate` | Prioritize and surface urgent, important, or operational emails |
+| `promotions_tab` | Route low-priority commercial and marketing emails to promotions |
+
 
 ## Observation Space
 
@@ -121,5 +123,7 @@ python inference.py
 Build and run with Docker:
 docker build -t email-openenv .
 docker run -p 7860:7860 email-openenv
+
+
 
 

@@ -16,7 +16,8 @@ tasks:
 
 action_space:
   type: string
-  values: ["spam", "important", "promotion"]
+  values: ["mark_spam", "escalate", "promotions_tab"]
+
 
 observation_space:
   type: object
