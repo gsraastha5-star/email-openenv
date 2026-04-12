@@ -97,7 +97,7 @@ docker run -p 7860:7860 email-openenv
 
 Example output from `python inference.py`:
 
-
+```
 [START] task=easy env=email-openenv model=gpt-4o-mini
 [STEP] step=1 action=mark_spam reward=1.90 done=false error=null
 [STEP] step=2 action=escalate reward=1.90 done=false error=null
@@ -128,4 +128,4 @@ Example output from `python inference.py`:
 [STEP] step=8 action=mark_spam reward=1.90 done=false error=null
 [STEP] step=9 action=mark_spam reward=1.90 done=false error=null
 [STEP] step=10 action=escalate reward=11.90 done=true error=null
-[END] success=true steps=10 score=0.9999 rewards=1.90,1.90,1.90,1.90,1.90,1.90,1.90,1.90,1.90,11.90
+[END] success=true steps=10 score=0.9999 rewards=1.90,1.90,1.90,1.90,1.90,1.90,1.90,1.90,1.90,11.90```  
