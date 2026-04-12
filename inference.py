@@ -49,7 +49,7 @@ def log_step(step: int, action: str, reward: float, done: bool, error: str | Non
 def log_end(success: bool, steps: int, score: float, rewards: list[float]) -> None:
     rewards_str = ",".join(f"{reward:.2f}" for reward in rewards)
     print(
-        f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}",
+        f"[END] success={str(success).lower()} steps={steps} score={score:.4f} rewards={rewards_str}",
         flush=True,
     )
 
@@ -95,11 +95,52 @@ def get_action(client: OpenAI, obs) -> str:
 
     text_blob = f"{obs.subject} {obs.sender} {obs.email_text}".lower()
 
-    if any(word in text_blob for word in ["verify", "suspension", "refund", "won", "free iphone", "compromised", "click here", "credential", "payroll verification"]):
+    if any(
+        word in text_blob
+        for word in [
+            "verify",
+            "suspension",
+            "refund",
+            "won",
+            "free iphone",
+            "compromised",
+            "click here",
+            "credential",
+            "payroll verification",
+        ]
+    ):
         return "mark_spam"
-    if any(word in text_blob for word in ["sale", "discount", "offer", "trial", "membership", "browse", "arrivals", "flash sale"]):
+
+    if any(
+        word in text_blob
+        for word in [
+            "sale",
+            "discount",
+            "offer",
+            "trial",
+            "membership",
+            "browse",
+            "arrivals",
+            "flash sale",
+        ]
+    ):
         return "promotions_tab"
-    if any(word in text_blob for word in ["meeting", "invoice", "deadline", "contract", "client", "team", "shipment", "board", "payroll", "standup"]):
+
+    if any(
+        word in text_blob
+        for word in [
+            "meeting",
+            "invoice",
+            "deadline",
+            "contract",
+            "client",
+            "team",
+            "shipment",
+            "board",
+            "payroll",
+            "standup",
+        ]
+    ):
         return "escalate"
 
     return random.choice(VALID_ACTIONS)

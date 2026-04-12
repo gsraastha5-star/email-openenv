@@ -306,10 +306,18 @@ class EmailEnv:
         }
 
     def get_grader_score(self) -> float:
+        eps = 0.0001
+
         if not self.true_labels:
-            return 0.0
+            return eps
+
         correct = sum(p == t for p, t in zip(self.predictions, self.true_labels))
-        return round(correct / len(self.true_labels), 4)
+        score = correct / len(self.true_labels)
+
+        score = max(eps, min(score, 1.0 - eps))
+        return round(score, 4)
+
+
 
     def _get_observation(self) -> Optional[Observation]:
         if self.current_index >= len(self.emails):

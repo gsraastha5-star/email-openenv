@@ -1,14 +1,3 @@
----
-title: Email-openEnv
-emoji: 📧
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-app_port: 7860
-pinned: false
-license: mit
----
-
 # Inbox Triage Action Environment
 
 An OpenEnv-compatible reinforcement learning environment where an AI agent learns to take realistic inbox triage actions such as `mark_spam`, `escalate`, or `promotions_tab`.
@@ -67,11 +56,10 @@ Examples of asymmetric penalties:
 
 Each task is graded programmatically using triage accuracy:
 
-
+text
 score = correct_predictions / total_predictions
 
 ## Setup Instructions
-bash:
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -95,13 +83,17 @@ docker run -p 7860:7860 email-openenv
 
 ## Baseline Results
 
+Example output from `python inference.py`:
+
+
 [START] task=easy env=email-openenv model=gpt-4o-mini
 [STEP] step=1 action=mark_spam reward=1.90 done=false error=null
 [STEP] step=2 action=escalate reward=1.90 done=false error=null
 [STEP] step=3 action=promotions_tab reward=1.90 done=false error=null
 [STEP] step=4 action=escalate reward=1.90 done=false error=null
 [STEP] step=5 action=mark_spam reward=11.90 done=true error=null
-[END] success=true steps=5 score=1.000 rewards=1.90,1.90,1.90,1.90,11.90
+[END] success=true steps=5 score=0.9999 rewards=1.90,1.90,1.90,1.90,11.90
+
 [START] task=medium env=email-openenv model=gpt-4o-mini
 [STEP] step=1 action=mark_spam reward=1.90 done=false error=null
 [STEP] step=2 action=escalate reward=1.90 done=false error=null
@@ -111,7 +103,8 @@ docker run -p 7860:7860 email-openenv
 [STEP] step=6 action=promotions_tab reward=1.90 done=false error=null
 [STEP] step=7 action=promotions_tab reward=-1.35 done=false error=null
 [STEP] step=8 action=escalate reward=1.90 done=true error=null
-[END] success=true steps=8 score=0.875 rewards=1.90,1.90,1.90,1.90,1.90,1.90,-1.35,1.90
+[END] success=true steps=8 score=0.8750 rewards=1.90,1.90,1.90,1.90,1.90,1.90,-1.35,1.90
+
 [START] task=hard env=email-openenv model=gpt-4o-mini
 [STEP] step=1 action=promotions_tab reward=1.90 done=false error=null
 [STEP] step=2 action=promotions_tab reward=1.90 done=false error=null
@@ -123,4 +116,4 @@ docker run -p 7860:7860 email-openenv
 [STEP] step=8 action=mark_spam reward=1.90 done=false error=null
 [STEP] step=9 action=mark_spam reward=1.90 done=false error=null
 [STEP] step=10 action=escalate reward=11.90 done=true error=null
-[END] success=true steps=10 score=1.000 rewards=1.90,1.90,1.90,1.90,1.90,1.90,1.90,1.90,1.90,11.90
+[END] success=true steps=10 score=0.9999 rewards=1.90,1.90,1.90,1.90,1.90,1.90,1.90,1.90,1.90,11.90
