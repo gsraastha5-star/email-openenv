@@ -1,41 +1,45 @@
-name: email-classifier-env
+name: inbox-triage-action-env
 version: "1.0.0"
-description: "RL environment for classifying emails into spam, important, or promotion"
+description: "OpenEnv environment for realistic inbox triage actions such as marking spam, escalating important mail, or routing promotions"
 author: "gsraastha5-star"
 
 tasks:
   - id: easy
-    description: "Classify 5 obvious emails"
+    description: "Personal inbox triage with obvious spam, promotions, and important messages"
     difficulty: easy
   - id: medium
-    description: "Classify 8 mixed emails"
+    description: "Workplace inbox triage with invoices, deadlines, renewals, and mixed-intent emails"
     difficulty: medium
   - id: hard
-    description: "Classify 10 tricky ambiguous emails"
+    description: "Security-sensitive inbox triage with phishing-like, ambiguous, and high-stakes business emails"
     difficulty: hard
 
 action_space:
   type: string
   values: ["mark_spam", "escalate", "promotions_tab"]
 
-
 observation_space:
   type: object
   fields:
     email_text: string
     sender: string
+    sender_domain: string
     subject: string
+    contains_links: boolean
+    contains_urgency_words: boolean
+    is_external_sender: boolean
     step: integer
     total_emails: integer
     task: string
+    task_description: string
 
 reward:
-  min: -1.1
+  min: -2.6
   max: 11.9
-  description: "+2 correct, -1 wrong, -0.1 step penalty, +10 perfect episode bonus"
+  description: "Asymmetric reward shaping for triage actions: +2 correct, stronger penalties for unsafe routing, -0.1 step penalty, +10 perfect episode bonus"
 
 endpoints:
-  reset: GET /reset
+  reset: GET/POST /reset
   step: POST /step
   state: GET /state
   tasks: GET /tasks
