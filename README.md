@@ -1,3 +1,15 @@
+---
+title: Email-openEnv
+emoji: 📧
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+---
+
+
 # Inbox Triage Action Environment
 
 An OpenEnv-compatible reinforcement learning environment where an AI agent learns to take realistic inbox triage actions such as `mark_spam`, `escalate`, or `promotions_tab`.
