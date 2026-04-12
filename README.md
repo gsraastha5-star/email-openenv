@@ -76,28 +76,28 @@ bash:
 ```
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt```
+pip install -r requirements.txt
 
 ## Usage Instructions
 Run the API server:
 ```
-uvicorn env:app --host 0.0.0.0 --port 7860```  
+uvicorn env:app --host 0.0.0.0 --port 7860  
 
 Open the local docs page:
 ```
-http://127.0.0.1:7860/docs```
+http://127.0.0.1:7860/docs
 
 Run the baseline inference script:
 ```
 export API_BASE_URL="https://api.openai.com/v1"
 export MODEL_NAME="gpt-4o-mini"
 export HF_TOKEN="your_token_here"
-python inference.py```
+python inference.py
 
 Build and run with Docker:
 ```
 docker build -t email-openenv .
-docker run -p 7860:7860 email-openenv```
+docker run -p 7860:7860 email-openenv
 
 ## Baseline Results
 
